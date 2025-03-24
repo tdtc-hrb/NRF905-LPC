@@ -1,33 +1,33 @@
-/**
- * ******************************************************************************************************
- *                                             Wireless Device
- *                                               RF project
- *                                               type File
- *                                               
- *                              (c) Copyright 2011-2025, Li.Guibin, BeiJing, ZH
- *                                            All Right Reserved
- * Date : 9/7/2011
- * File : type.h
- * By   : Li.Guibin
- * ******************************************************************************************************
- */
+/*****************************************************************************
+ *   type.h:  Type definition Header file for NXP LPC17xx Family 
+ *   Microprocessors
+ *
+ *   Copyright(C) 2009, NXP Semiconductor
+ *   All rights reserved.
+ *
+ *   History
+ *   2009.05.25  ver 1.00    Prelimnary version, first Release
+ *
+******************************************************************************/
+#include <stdint.h>
 
-#ifndef _TYPE_H
-#define _TYPE_H
+#ifndef __TYPE_H__
+#define __TYPE_H__
 
-#ifndef TRUE
-#define TRUE    (1UL)
+#ifndef NULL
+#define NULL    ((void *)0)
 #endif
 
 #ifndef FALSE
-#define FALSE   (0UL)
+#define FALSE   (0)
+#endif
+
+#ifndef TRUE
+#define TRUE    (1)
 #endif
 
 
-#endif
+typedef enum {RESET = 0, SET = !RESET} FlagStatus, ITStatus;
+typedef enum {DISABLE = 0, ENABLE = !DISABLE} FunctionalState;
 
-/**
- * ******************************************************************************************************
- * End Of File
- * ******************************************************************************************************
- */
+#endif  /* __TYPE_H__ */
