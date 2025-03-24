@@ -4,17 +4,17 @@
  *                                               RF project
  *                                               nRF905 File
  *                                               
- *                              (c) Copyright 2011-2025, Li.Guibin, BeiJing, ZH
- *                                            All Right Reserved
- * Date : 9/20/2011
- * File : nRF905.c
- * By   : Li.Guibin
+ *                             (c) Copyright 2011-2025, Li.Guibin, BeiJing, ZH
+ *                                          All Right Reserved
+ * Date    : 10/1/2011
+ * File    : nRF905.c
+ * By      : Li.Guibin
+ * Version : V0.3
  * ******************************************************************************************************
  */
 
 #include <stdint.h>
 #include "nRF905.h"
-//#include "spi.h"
 
 #if (CM3LPC17xx)
 #include "LPC17xx.h"
@@ -37,10 +37,13 @@
      * <p> This function not validate! </p>
      *
      * data = GPIO2MASKED_ACCESS(1UL << 9);    // Read from PIO2.7 status
+     *
      */
 #endif
 
-volatile uint8_t TxBuf[32] = "TestData", RxBuf[32] = "0123456789";
+/*$PAGE*/
+
+volatile uint8_t TxBuf[32] = "ID000001ThisDataExplainIsExample", RxBuf[32] = "0123456789";
 
 typedef struct 
 {
@@ -55,12 +58,19 @@ RFconfig TxRxConf =
     0x01,    /* Byte 0 - CH_NO: CH_NO[7:0]: Init value = 0110_1100 */
     0x0C,    /* Byte 1 - AUTO_RETRAN, RX_RED_PWR, PA_PWR[1:0], HFREQ_PLL, CH_NO[8]: IVal = 0000_0000 */
     0x44,    /* Byte 2 - TX_AFW[2:0], RX_AFW[2:0]: Init value = 0100_0100 */
-    0x20,    /* Byte 3 - RX_PW[5:0]: Init value = 0010_0000 */
-    0x20,    /* Byte 4 - TX_PW[5:0]: Init value = 0010_0000 */
+    0x20,    /* Byte 3 - RX_PW[5:0]: Init value = 0010_0000 */ 
+    0x20,    /* Byte 4 - TX_PW[5:0]: Init value = 0010_0000 */ 
+#if (CM3LPC17xx)
     0xCC,    /* Byte 5 - RX_ADDRESS(device identity) byte 0: Init value = E7 */
-    0xCC,    /* Byte 6 - RX_ADDRESS(device identity) byte 1: Init value = E7 */
+    0xCC,    /* Byte 6 - RX_ADDRESS(device identity) byte 1: Init value = E7 */ 
     0xCC,    /* Byte 7 - RX_ADDRESS(device identity) byte 2: Init value = E7 */
     0xCC,    /* Byte 8 - RX_ADDRESS(device identity) byte 3: Init value = E7 */
+#else
+    0x12,    /* Byte 5 - RX_ADDRESS(device identity) byte 0: Init value = E7 */
+    0x34,    /* Byte 6 - RX_ADDRESS(device identity) byte 1: Init value = E7 */ 
+    0x56,    /* Byte 7 - RX_ADDRESS(device identity) byte 2: Init value = E7 */
+    0x78,    /* Byte 8 - RX_ADDRESS(device identity) byte 3: Init value = E7 */
+#endif
     0x58     /* Byte 9 - CRC_MODE, CRC_EN, XOF[2:0], UP_CLK_EN, UP_CLK_FREQ[1:0]: IVal = 1110_0111 */
 };
 
@@ -74,16 +84,28 @@ TxAddress TxAddr =
 {
     4,
     
+#if (CM3LPC17xx)   
+    0x12,    /* Byte 0 - TX_ADDRESS[7:0]:   Init value = E7 */
+    0x34,    /* Byte 1 - TX_ADDRESS[15:8]:  Init value = E7 */
+    0x56,    /* Byte 2 - TX_ADDRESS[23:16]: Init value = E7 */
+    0x78     /* Byte 3 - TX_ADDRESS[31:24]: Init value = E7 */
+#else
     0xCC,    /* Byte 0 - TX_ADDRESS[7:0]:   Init value = E7 */
     0xCC,    /* Byte 1 - TX_ADDRESS[15:8]:  Init value = E7 */
     0xCC,    /* Byte 2 - TX_ADDRESS[23:16]: Init value = E7 */
     0xCC     /* Byte 3 - TX_ADDRESS[31:24]: Init value = E7 */
+#endif
+
 };
- 
+
+/*$PAGE*/ 
+
 /**
  * <p> Delay 28 ns </p>
- * @param  uint32_t ns
- * @return void
+ *
+ * @param  ns
+ * @return None
+ *
  */
 void    Delay28ns(uint32_t ns)
 {
@@ -93,69 +115,98 @@ void    Delay28ns(uint32_t ns)
 
 /**
  * <p> Delay 1 us </p>
- * @param uint8_t us
- * @return void
+ *
+ * @param  uint8_t us
+ * @return None
+ *
  */
 void Delay1us(uint8_t us)
 {
     uint8_t i, j;
     for (i = 0; i < us; i++)
-        for (j = 0; j < 0x42; j++)                 /* delay, minimum 1us */
+        for (j = 0; j < 0x42; j++)                  /* delay, minimum 1us */
             ;
 }
 
 /**
  * <p> Delay 1 ms </p>
- * @param uint32_t ms
- * @return void
+ *
+ * @param  ms
+ * @return None
+ *
  */
 void Delay1ms(uint32_t ms)
 {
     uint32_t i, j;
     for (i = 0; i < ms; i++)
-        for ( j = 0; j < 0x10000; j++ )            /* delay, minimum 1ms */
+        for ( j = 0; j < 0x10000; j++ )             /* delay, minimum 1ms */
             ;
 }
 
+/*$PAGE*/
 
 /**
  * <p> System Board Init </p>
- * @param  void
- * @return void
+ *
+ * @param  None
+ * @return None
+ *
  */
 void    ConfigGPIO(void)
 {
                                                    /* Config GPIO      */
 #if (CM3LPC17xx)                                   /* LPC17xx          */
-      // SPI
-      // LPC_PINCON->PINSEL0 |= 0x03 << 30;          /* P0.15(Function when 11) - SCK  */
-      // LPC_PINCON->PINSEL1 |= 0x03 << 4;           /* P0.18(Function when 11) - MOSI */
-      // LPC+PINCON->PINSEL1 |= 0x03 << 2;           /* P0.17(Function when 11) - MISO */
-    
+
+    /**
+     * <p> The original method used to initialize the SPI functions related PIN </p>
+     *
+     * // LPC_PINCON->PINSEL0 |= 0x03 << 30;          // P0.15(Function when 11) - SCK  //
+     * // LPC_PINCON->PINSEL1 |= 0x03 << 4;           // P0.18(Function when 11) - MOSI //
+     * // LPC+PINCON->PINSEL1 |= 0x03 << 2;           // P0.17(Function when 11) - MISO //
+     *
+     */
     SSP0Init();
                                                    /* GPIO Output      */
     LPC_GPIO2->FIODIR |= TX_EN | TRX_CE | PWR_UP;
     LPC_GPIO2->FIODIR |= CSN;
-    // LPC_GPIO0->FIODIR |= SCK | MOSI;
+    
+    /**
+     * <p> The original method used to initialize the SPI functions related PIN </p>
+     *
+     * LPC_GPIO0->FIODIR |= SCK | MOSI;
+     *
+     */
     
                                                    /* GPIO Input       */
-    // LPC_GPIO0->FIODIR &= ~MISO;
+    /**
+     * <p> The original method used to initialize the SPI functions related PIN </p>
+     *
+     * LPC_GPIO0->FIODIR &= ~MISO;
+     *
+     */
+    
     LPC_GPIO2->FIODIR &= (~CD);
     LPC_GPIO2->FIODIR &= (~AM);
     LPC_GPIO2->FIODIR &= (~DREADY);
-    
+        
 #else                                              /* LPC11xx          */
     SSP_IOConfig(0);                               /* SSP0             */
     SSP_Init(0);
-    // LPC_IOCON->PIO0_8 &= ~0x07;
-    // LPC_IOCON->PIO0_8 |= 0x01;                  /* PIO0.8 SSP MISO  */
     
-    // LPC_IOCON->PIO0_9 &= ~0x07;
-    // LPC_IOCON->PIO0_9 |= 0x01;                  /* PIO0.9 SSP MOSI  */
+    /**
+     * <p> The original method used to initialize the SPI functions related PIN </p>
+     *
+     * // LPC_IOCON->PIO0_8 &= ~0x07;
+     * // LPC_IOCON->PIO0_8 |= 0x01;                  // PIO0.8 SSP0 MISO  //
+     *
+     * // LPC_IOCON->PIO0_9 &= ~0x07;
+     * // LPC_IOCON->PIO0_9 |= 0x01;                  // PIO0.9 SSP0 MOSI  //
+     *
+     * // LPC_IOCON->SCK_LOC = 0x01;
+     * // LPC_IOCON->PIO2_11 = 0x01;                  // PIO2.11 SSP0 SCK  //
+     *
+     */
     
-    // LPC_IOCON->SCK_LOC = 0x01;
-    // LPC_IOCON->PIO2_11 = 0x01;                  /* PIO2.11 SSP SCK  */
-        
                                                    /* GPIO Output      */
     LPC_IOCON->PIO0_2 &= ~0x07;
     LPC_IOCON->PIO2_4 &= ~0x07;
@@ -171,8 +222,10 @@ void    ConfigGPIO(void)
 
 /**
  * <p> Write nRF905 Register </p>
- * @param  void
- * @return void
+ *
+ * @param  None
+ * @return None
+ *
  */
 void Config905(void)
 {
@@ -188,26 +241,27 @@ void Config905(void)
     MSpiWrite(0, WC);
 
     for (i = 0; i < TxRxConf.len; i++) {
-       MSpiWrite(0, TxRxConf.buf[i]); 
+       MSpiWrite(0, TxRxConf.buf[i]);
     }
     
-    /*
-    
-    MSpiWrite(WC);                                 // Write config command
-    MSpiWrite(CH_NO_BYTE);                         //0x4c  //中心频率低8位
-    MSpiWrite(PA_PWR_10dBm | HFREQ_PLL_433MHz);    //0x0c  //发射+10dBm,发射频率433MHz,中心频率第9位=0
-    MSpiWrite(TX_AFW_4BYTE | RX_AFW_4BYTE);        //0x44  //接收地址宽度4字节,发送地址宽度4字节
-    MSpiWrite(RX_PW_32BYTE);                       //0x20  //接收数据宽度32字节
-    MSpiWrite(TX_PW_32BYTE);                       //0x20  //发送数据宽度32字节
-    MSpiWrite(RX_ADDRESS_0);                       //0x12  //接收有效地址第1字节
-    MSpiWrite(RX_ADDRESS_1);                       //0x34  //接收有效地址第2字节
-    MSpiWrite(RX_ADDRESS_2);                       //0x56  //接收有效地址第3字节
-    MSpiWrite(RX_ADDRESS_3);                       //0x78  //接收有效地址第4字节
-    MSpiWrite(CRC16_EN | XOF_16MHz);               //0xD8  //CRC16模式使能,晶体振荡器频率16MHz
-    
-    */
+    /**
+     * <p> Do not use structure initialization </p>
+     *
+     * MSpiWrite(WC);                               // Write config command
+     * MSpiWrite(CH_NO_BYTE);                       //中心频率低8位                               //0x4c
+     * MSpiWrite(PA_PWR_10dBm | HFREQ_PLL_433MHz);  //发射+10dBm,发射频率433MHz,中心频率第9位=0   //0x0c
+     * MSpiWrite(TX_AFW_4BYTE | RX_AFW_4BYTE);      //接收地址宽度4字节,发送地址宽度4字节         //0x44
+     * MSpiWrite(RX_PW_32BYTE);                     //接收数据宽度32字节                          //0x20
+     * MSpiWrite(TX_PW_32BYTE);                     //发送数据宽度32字节                          //0x20
+     * MSpiWrite(RX_ADDRESS_0);                     //接收有效地址第1字节                         //0x12
+     * MSpiWrite(RX_ADDRESS_1);                     //接收有效地址第2字节                         //0x34
+     * MSpiWrite(RX_ADDRESS_2);                     //接收有效地址第3字节                         //0x56
+     * MSpiWrite(RX_ADDRESS_3);                     //接收有效地址第4字节                         //0x78
+     * MSpiWrite(CRC16_EN | XOF_16MHz);             //CRC16模式使能,晶体振荡器频率16MHz           //0xD8
+     *
+     */
 
-    
+   
 #if (CM3LPC17xx)
     LPC_GPIO2->FIOSET |= CSN;                      /* Set P2.6(CSN) High    */
 #else
@@ -218,21 +272,45 @@ void Config905(void)
 
 /**
  * <p> Init nRF905 </p>
- * @param  void
- * @return void
+ *
+ * @param  None
+ * @return None
+ *
  */
 void    Init905(void)
 {
     ConfigGPIO();
     SetStandbyMode();
-    //Delay1ms(3);                                 /* Must be >3ms */
+    
+    /**
+     * <p> Device Switching Times </p>
+     *
+     * <table border>
+     * <tr><th> nRF905 timing </th><th> Max. </th></tr>
+     * <tr><td> PWR_DWN -> ST_BY mode </td><td> 3 ms </td></tr>
+     * <tr><td> STBY -> TX ShockBurst </td><td> 650 us </td></tr>
+     * <tr><td> STBY -> RX ShockBurst </td><td> 650 us </td></tr>
+     * <tr><td> RX ShockBurst -> TX ShockBurst </td><td> 550 us </td></tr>
+     * <tr><td> TX ShockBurst -> RX ShockBurst </td><td> 550 us </td></tr>
+     * </table border>
+     *
+     * a. RX to TX or TX to RX switching is available without re-programming
+     *    the RF configuration register. The same frequency channel is maintained.
+     * 
+     * Delay1ms(3); 
+     *
+     */
+
     Delay28ns(108000);
     Config905();
     SetRxMode();                                   /* Set nRF905 in Rx Mode          */
 }
 
+/*$PAGE*/
+
 /**
  * <p> Set nRF905 Operating Mode: Radio Enable - ShockBurst TX </p>
+ *
  * <table border>
  * <tr><th>PWR_UP</th><th>TRX_CE</th><th>TX_EN</th><th>Operating Mode</th></tr>
  * <tr><td>1</td><td>X</td><td>X</td><td>Power down and SPI programming</td></tr>
@@ -241,8 +319,10 @@ void    Init905(void)
  * <tr><td>1</td><td>1</td><td>0</td><td>Radio Enable - ShockBurst RX</td></tr>
  * <tr><td>1</td><td>1</td><td>1</td><td>Radio Enable - ShockBurst TX</td></tr>
  * </table border>
- * @param  void
- * @return void
+ *
+ * @param  None
+ * @return None
+ *
  */
 void SetTxMode(void)
 {
@@ -253,7 +333,9 @@ void SetTxMode(void)
     LPC_GPIO2->FIOSET |= PWR_UP;
     __nop();
     LPC_GPIO2->FIOSET |= TRX_CE;
-    __nop();
+
+    Delay28ns(10);
+
     LPC_GPIO2->FIOSET |= TX_EN;
 #else
     __nop();
@@ -262,16 +344,39 @@ void SetTxMode(void)
     GPIOSetValue(PORT2, PWR_UP, 1);
     __nop();
     GPIOSetValue(PORT2, TRX_CE, 1);
-    __nop();
-    GPIOSetValue(PORT2, TX_EN,  1);;
+
+    Delay28ns(10);
+
+    GPIOSetValue(PORT2, TX_EN,  1);
 #endif
 
-    //Delay1ms(1);
+    /**
+     * <p> Device Switching Times </p>
+     *
+     * <table border>
+     * <tr><th> nRF905 timing </th><th> Max. </th></tr>
+     * <tr><td> PWR_DWN -> ST_BY mode </td><td> 3 ms </td></tr>
+     * <tr><td> STBY -> TX ShockBurst </td><td> 650 us </td></tr>
+     * <tr><td> STBY -> RX ShockBurst </td><td> 650 us </td></tr>
+     * <tr><td> RX ShockBurst -> TX ShockBurst </td><td> 550 us </td></tr>
+     * <tr><td> TX ShockBurst -> RX ShockBurst </td><td> 550 us </td></tr>
+     * </table border>
+     *
+     * a. RX to TX or TX to RX switching is available without re-programming
+     *    the RF configuration register. The same frequency channel is maintained.
+     * 
+     * Delay1us(650); 
+     *
+     */
+     
     Delay28ns(108000);
 }
 
+/*$PAGE*/
+
 /**
  * <p> Set nRF905 Operating Mode: Power down and SPI programming </p>
+ *
  * <table border>
  * <tr><th>PWR_UP</th><th>TRX_CE</th><th>TX_EN</th><th>Operating Mode</th></tr>
  * <tr><td>1</td><td>X</td><td>X</td><td>Power down and SPI programming</td></tr>
@@ -280,8 +385,10 @@ void SetTxMode(void)
  * <tr><td>1</td><td>1</td><td>0</td><td>Radio Enable - ShockBurst RX</td></tr>
  * <tr><td>1</td><td>1</td><td>1</td><td>Radio Enable - ShockBurst TX</td></tr>
  * </table border>
- * @param  void
- * @return void
+ *
+ * @param  None
+ * @return None
+ *
  */
 void    SetPowerOffMode(void)
 {
@@ -297,12 +404,33 @@ void    SetPowerOffMode(void)
     GPIOSetValue(PORT2, PWR_UP, 0);
 #endif
 
-    // Delay1ms(3);
+    /**
+     * <p> Device Switching Times </p>
+     *
+     * <table border>
+     * <tr><th> nRF905 timing </th><th> Max. </th></tr>
+     * <tr><td> PWR_DWN -> ST_BY mode </td><td> 3 ms </td></tr>
+     * <tr><td> STBY -> TX ShockBurst </td><td> 650 us </td></tr>
+     * <tr><td> STBY -> RX ShockBurst </td><td> 650 us </td></tr>
+     * <tr><td> RX ShockBurst -> TX ShockBurst </td><td> 550 us </td></tr>
+     * <tr><td> TX ShockBurst -> RX ShockBurst </td><td> 550 us </td></tr>
+     * </table border>
+     *
+     * a. RX to TX or TX to RX switching is available without re-programming
+     *    the RF configuration register. The same frequency channel is maintained.
+     * 
+     * Delay1ms(3); 
+     *
+     */
+
     Delay28ns(108000);
 }
 
+/*$PAGE*/
+
 /**
  * <p> Set nRF905 Operating Mode: Standby and SPI Porgramming </p>
+ *
  * <table border>
  * <tr><th>PWR_UP</th><th>TRX_CE</th><th>TX_EN</th><th>Operating Mode</th></tr>
  * <tr><td>1</td><td>X</td><td>X</td><td>Power down and SPI programming</td></tr>
@@ -311,8 +439,10 @@ void    SetPowerOffMode(void)
  * <tr><td>1</td><td>1</td><td>0</td><td>Radio Enable - ShockBurst RX</td></tr>
  * <tr><td>1</td><td>1</td><td>1</td><td>Radio Enable - ShockBurst TX</td></tr>
  * </table border>
- * @param  void
- * @return void 
+ *
+ * @param  None
+ * @return None
+ *
  */
 void    SetStandbyMode(void)
 {
@@ -332,12 +462,33 @@ void    SetStandbyMode(void)
     GPIOSetValue(PORT2, TRX_CE, 0);
 #endif
 
-    // Delay1ms(1);
+    /**
+     * <p> Device Switching Times </p>
+     *
+     * <table border>
+     * <tr><th> nRF905 timing </th><th> Max. </th></tr>
+     * <tr><td> PWR_DWN -> ST_BY mode </td><td> 3 ms </td></tr>
+     * <tr><td> STBY -> TX ShockBurst </td><td> 650 us </td></tr>
+     * <tr><td> STBY -> RX ShockBurst </td><td> 650 us </td></tr>
+     * <tr><td> RX ShockBurst -> TX ShockBurst </td><td> 550 us </td></tr>
+     * <tr><td> TX ShockBurst -> RX ShockBurst </td><td> 550 us </td></tr>
+     * </table border>
+     *
+     * a. RX to TX or TX to RX switching is available without re-programming
+     *    the RF configuration register. The same frequency channel is maintained.
+     * 
+     * Delay1us(650); 
+     *
+     */
+    
     Delay28ns(108000);
 }
 
+/*$PAGE*/
+
 /**
  * <p> Set nRF905 Operating Mode: Radio Enable - ShockBurst RX </p>
+ *
  * <table border>
  * <tr><th>PWR_UP</th><th>TRX_CE</th><th>TX_EN</th><th>Operating Mode</th></tr>
  * <tr><td>1</td><td>X</td><td>X</td><td>Power down and SPI programming</td></tr>
@@ -346,8 +497,10 @@ void    SetStandbyMode(void)
  * <tr><td>1</td><td>1</td><td>0</td><td>Radio Enable - ShockBurst RX</td></tr>
  * <tr><td>1</td><td>1</td><td>1</td><td>Radio Enable - ShockBurst TX</td></tr>
  * </table border>
- * @param  void
- * @return void
+ *
+ * @param  None
+ * @return None
+ *
  */
 void SetRxMode(void)
 {
@@ -370,96 +523,223 @@ void SetRxMode(void)
     __nop();
     GPIOSetValue(PORT2, TX_EN,  0);
 #endif
-    // Delay1ms(1);
+
+    /**
+     * <p> Device Switching Times </p>
+     *
+     * <table border>
+     * <tr><th> nRF905 timing </th><th> Max. </th></tr>
+     * <tr><td> PWR_DWN -> ST_BY mode </td><td> 3 ms </td></tr>
+     * <tr><td> STBY -> TX ShockBurst </td><td> 650 us </td></tr>
+     * <tr><td> STBY -> RX ShockBurst </td><td> 650 us </td></tr>
+     * <tr><td> RX ShockBurst -> TX ShockBurst </td><td> 550 us </td></tr>
+     * <tr><td> TX ShockBurst -> RX ShockBurst </td><td> 550 us </td></tr>
+     * </table border>
+     *
+     * a. RX to TX or TX to RX switching is available without re-programming
+     *    the RF configuration register. The same frequency channel is maintained.
+     * 
+     * Delay1us(650); 
+     *
+     */
+     
     Delay28ns(108000); 
 }
 
+/*$PAGE*/
+
 /**
  * <p> Fill Tx Data Packet </p>
+ *
  * ------------+----------------
  * |           |               |
  * |   ADDR    |   PAYLOAD     |
  * |           |               |
  * ------------+----------------
  *
- * @param  void
- * @return void
+ * @param  None
+ * @return None
+ *
  */
 void TxPacket(void)
 {
     uint8_t i;
     
-    SetStandbyMode();
-    __nop();
-
-                                                        /* Write 4 bytes Address  */
-#if (CM3LPC17xx)
-    LPC_GPIO2->FIOCLR &= CSN;                           /* SPI Enable             */
-#else
-    GPIOSetValue(PORT0, CSN, 0);
-#endif
-     
-    MSpiWrite(0, WTA);                                  /* Write Address command  */
-     
-    for (i = 0; i < 4; i++) {
-        MSpiWrite(0, TxAddr.buf[i]);
-    }
-
-#if (CM3LPC17xx)
-    LPC_GPIO2->FIOSET |= CSN;                           /* SPI Disable            */
-#else
-    GPIOSetValue(PORT0, CSN, 1);
-#endif 
+    SetTxMode();
     
-                                                        /* Write 32 bytes Tx Data */
+    /**
+     * <p> Device Switching Times </p>
+     *
+     * <table border>
+     * <tr><th> nRF905 timing </th><th> Max. </th></tr>
+     * <tr><td> PWR_DWN -> ST_BY mode </td><td> 3 ms </td></tr>
+     * <tr><td> STBY -> TX ShockBurst </td><td> 650 us </td></tr>
+     * <tr><td> STBY -> RX ShockBurst </td><td> 650 us </td></tr>
+     * <tr><td> RX ShockBurst -> TX ShockBurst </td><td> 550 us </td></tr>
+     * <tr><td> TX ShockBurst -> RX ShockBurst </td><td> 550 us </td></tr>
+     * </table border>
+     *
+     * a. RX to TX or TX to RX switching is available without re-programming
+     *    the RF configuration register. The same frequency channel is maintained.
+     * 
+     * Delay1ms(3); 
+     *
+     */
+     
+    Delay28ns(108000);
+    
 #if (CM3LPC17xx)
-    LPC_GPIO2->FIOCLR &= CSN;                           /* SPI Enable             */
+    if (LPC_GPIO2->FIOSET & TX_EN) {                                      /* With different RX */
 #else
-    GPIOSetValue(PORT0, CSN, 0);
+    if (GPIOReadValue(PORT2, TX_EN)) {
+#endif
+                                                                          /* CD = Low, AM = Low */
+#if (CM3LPC17xx)
+        if (!((LPC_GPIO2->FIOPIN & CD) 
+          || (LPC_GPIO2->FIOPIN & AM))) {                                 /* With different RX */
+#else
+        if (!(GPIOReadValue(PORT2, CD)) 
+          || (GPIOReadValue(PORT2, AM))) {
+#endif
+    
+            SetStandbyMode();
+            __nop();
+
+                                                                          /* Write 4 bytes Address  */
+#if (CM3LPC17xx)
+            LPC_GPIO2->FIOCLR &= CSN;                                     /* SPI Enable             */
+#else
+            GPIOSetValue(PORT0, CSN, 0);
 #endif
 
-    MSpiWrite(0, WTP);
-    for (i = 0; i < 32; i++) {
-        MSpiWrite(0, TxBuf[i]);
+            MSpiWrite(0, WTA);                                            /* Write Address command  */
+     
+            for (i = 0; i < 4; i++) {
+                MSpiWrite(0, TxAddr.buf[i]);
+            }
+    
+
+#if (CM3LPC17xx)
+            LPC_GPIO2->FIOSET |= CSN;                                     /* SPI Disable            */
+#else
+            GPIOSetValue(PORT0, CSN, 1);
+#endif 
+            Delay28ns(10);
+                                                                          /* Write 32 bytes Tx Data */
+#if (CM3LPC17xx)
+            LPC_GPIO2->FIOCLR &= CSN;                                     /* SPI Enable             */    
+#else
+            GPIOSetValue(PORT0, CSN, 0);
+#endif
+
+            MSpiWrite(0, WTP);                                            /* Write TX-Payload cmd  */
+            for (i = 0; i < 32; i++) {
+                MSpiWrite(0, TxBuf[i]);
+            }
+
+#if (CM3LPC17xx)
+            LPC_GPIO2->FIOSET |= CSN;                                     /* SPI Disable            */
+#else
+            GPIOSetValue(PORT0, CSN, 1);
+#endif
+
+    /**
+     * <p> Device Switching Times </p>
+     *
+     * <table border>
+     * <tr><th> nRF905 timing </th><th> Max. </th></tr>
+     * <tr><td> PWR_DWN -> ST_BY mode </td><td> 3 ms </td></tr>
+     * <tr><td> STBY -> TX ShockBurst </td><td> 650 us </td></tr>
+     * <tr><td> STBY -> RX ShockBurst </td><td> 650 us </td></tr>
+     * <tr><td> RX ShockBurst -> TX ShockBurst </td><td> 550 us </td></tr>
+     * <tr><td> TX ShockBurst -> RX ShockBurst </td><td> 550 us </td></tr>
+     * </table border>
+     *
+     * a. RX to TX or TX to RX switching is available without re-programming
+     *    the RF configuration register. The same frequency channel is maintained.
+     * 
+     * Delay1us(550); 
+     *
+     */
+     
+            Delay28ns(3572);
+                                                        /* Enables chip for receive and transmit */
+#if (CM3LPC17xx)
+            LPC_GPIO2->FIOSET |= TRX_CE;
+#else
+            GPIOSetValue(PORT2, TRX_CE, 1);
+#endif
+            Delay28ns(3572);
+    
+#if (CM3LPC17xx)
+            if (LPC_GPIO2->FIOSET & TX_EN) {
+                LPC_GPIO2->FIOCLR |= TRX_CE;
+            }
+            else {
+                LPC_GPIO2->FIOSET |= TRX_CE;
+            }
+#else
+            if ((GPIOReadValue(PORT2, TX_EN))) {
+                GPIOSetValue(PORT2, TRX_CE, 0);
+            }
+            else {
+                GPIOSetValue(PORT2, TRX_CE, 1);
+            }
+#endif
+        }
     }
-
-#if (CM3LPC17xx)
-    LPC_GPIO2->FIOSET |= CSN;                           /* SPI Disable            */
-#else
-    GPIOSetValue(PORT0, CSN, 1);
-#endif
-
-    //Delay1us(100);
-    Delay28ns(3572);
-                                                        /* Enables chip for receive and transmit       */
-    SetTxMode();    
 }
+
+/*$PAGE*/
 
 /**
  * <p> Read Rx Data when DR and AM is low </p>
- * @param  void
- * @return void
+ *
+ * @param  None
+ * @return True or False
+ *
  */
-void RxPacket(void)
+uint8_t RxPacket(void)
 {
-    uint8_t i;
+    uint8_t i, result;
                                                         /* Set nRF905 in standby mode */
-    SetStandbyMode();
-    //Delay1ms(3);                                      /* Must be >3ms */
+    SetRxMode();
+    
+    /**
+     * <p> Device Switching Times </p>
+     *
+     * <table border>
+     * <tr><th> nRF905 timing </th><th> Max. </th></tr>
+     * <tr><td> PWR_DWN -> ST_BY mode </td><td> 3 ms </td></tr>
+     * <tr><td> STBY -> TX ShockBurst </td><td> 650 us </td></tr>
+     * <tr><td> STBY -> RX ShockBurst </td><td> 650 us </td></tr>
+     * <tr><td> RX ShockBurst -> TX ShockBurst </td><td> 550 us </td></tr>
+     * <tr><td> TX ShockBurst -> RX ShockBurst </td><td> 550 us </td></tr>
+     * </table border>
+     *
+     * a. RX to TX or TX to RX switching is available without re-programming
+     *    the RF configuration register. The same frequency channel is maintained.
+     * 
+     * Delay1ms(3); 
+     *
+     */
+     
     Delay28ns(108000);
 
                                                         /* TX_EN = Low */
 #if (CM3LPC17xx)
     if (!(LPC_GPIO2->FIOSET & TX_EN)) {
 #else
-    if (!(LPC_GPIO2->MASKED_ACCESS[1UL << TX_EN] & (1UL << TX_EN))) {
+    if (!(GPIOReadValue(PORT2, TX_EN))) {
 #endif
+        result = FALSE;
                                                         /* CD = Low, AM = Low */
 #if (CM3LPC17xx)
-        if ((LPC_GPIO2->FIOPIN & CD) || (LPC_GPIO2->FIOPIN & AM)) {
+        if ((LPC_GPIO2->FIOPIN & CD) 
+          || (LPC_GPIO2->FIOPIN & AM)) {
 #else
-        if ((LPC_GPIO2->MASKED_ACCESS[1UL << CD] & (1UL << CD)) 
-          || (LPC_GPIO2->MASKED_ACCESS[1UL << AM] & (1UL << AM))) {
+        if ((GPIOReadValue(PORT2, CD)) 
+          || (GPIOReadValue(PORT2, AM))) {
 #endif
 
             SetStandbyMode();
@@ -472,8 +752,10 @@ void RxPacket(void)
 #endif
             MSpiWrite(0, RRP);
             for (i = 0; i < 32; i++) {
-                RxBuf[i] = MSpiRead(0);
+               RxBuf[i] = MSpiRead(0);
             }
+
+            result = TRUE;
 #if (CM3LPC17xx)
             LPC_GPIO2->FIOSET |= CSN;
 #else
@@ -483,20 +765,25 @@ void RxPacket(void)
 #if (CM3LPC17xx)
             if (LPC_GPIO2->FIOSET & TX_EN) {
                 LPC_GPIO2->FIOSET |= TRX_CE;
-            }                        
+            }
 #else
-            if ((LPC_GPIO2->MASKED_ACCESS[1UL << TX_EN] & (1UL << TX_EN))) {
+            if ((GPIOReadValue(PORT2, TX_EN))) {
                 GPIOSetValue(PORT2, TRX_CE, 1);
             }
 #endif
         }
     }
+    return (result);
 }
-    
+
+/*$PAGE*/
+
 /**
  * <p> Test SPI </p>
- * @param  uint8_t cmd
- * @return uint8_t status
+ *
+ * @param  cmd
+ * @return status
+ *
  */
 uint8_t    MSpiTest(uint8_t cmd)
 {
@@ -514,7 +801,7 @@ uint8_t    MSpiTest(uint8_t cmd)
         RxBuf[i] = MSpiRead(0);
     }
     
-#if (CM3LPC17xx)    
+#if (CM3LPC17xx)
     LPC_GPIO2->FIOSET |= CSN;
 #else 
     GPIOSetValue(PORT0, CSN, 1);
@@ -522,8 +809,8 @@ uint8_t    MSpiTest(uint8_t cmd)
     status = RxBuf[0];
 
     return (status);
-    
 }
+
 
 /**
  * ******************************************************************************************************

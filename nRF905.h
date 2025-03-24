@@ -6,9 +6,10 @@
  *                                               
  *                              (c) Copyright 2011-2025, Li.Guibin, BeiJing, ZH
  *                                            All Right Reserved
- * Date : 9/18/2011
- * File : nRF905.h
- * By   : Li.Guibin
+ * Date    : 10/1/2011
+ * File    : nRF905.h
+ * By      : Li.Guibin
+ * Version : V0.3
  * ******************************************************************************************************
  */
 
@@ -27,11 +28,13 @@
 #define WTA      0x22        /* Write Tx Address command             */
 #define RTA      0x23        /* Read  Tx Address command             */
 #define RRP      0x24        /* Read  Rx Payload command             */
-  
+
 
 #if (CM3LPC17xx)             /* LPC17xx        */
 
 /**
+ * <p> MCU - nRF905 </p>
+ *
  * 1. Output - Input
  * P2.3 - TXE
  * P2.4 - CE
@@ -48,6 +51,7 @@
  * P0.18 (MOSI)
  * 
  * P2.6 (GPIO) - CSN
+ *
  */
                              /* Input          */
 #define CD      (1UL << 8)   /* P2.8           */
@@ -65,6 +69,8 @@
 #else                        /* LPC11xx        */
 
 /**
+ * <p> MCU - nRF905 </p>
+ *
  * 1. Output - Input
  * P2.4 - TXE
  * P2.5 - CE
@@ -79,6 +85,7 @@
  * P2.11 (SCK0)
  * P0.8 (MISO0)
  * P0.9 (MOSI0)
+ *
  */
                              /* Input          */
 #define CD      (7UL)        /* P2.7           */
@@ -97,6 +104,7 @@
 
 /**
  * <p> RF - Configuration Register Description </p>
+ *
  * @param CH_NO 
  *        Bitwidth:    9
  *        Description: Sets center frequency together with HFREQ_PLL  (default = 001101100[b] = 108[b]
@@ -182,15 +190,18 @@
  *        Description: CRC - mode (default = 1).
  *                     '0' - 8 CRC check bit
  *                     '1' - 16 CRC check bit
+ *
  */
+
+/*$PAGE*/
 
 /*-------------------------------------------------------------------------------------------
 nrf905配置寄存器宏定义 author:HotPower
         nrf905配置寄存器(10Byte)
 工作频率f=(422.4+CH_NO/10)*(1+HFREQ_PLL)MHz
 -------------------------------------------------------------------------------------------*/
-#define RX_ADDRESS           0x12345678                //接收有效地址(本方)
-#define TX_ADDRESS           0x12345678                //发送有效地址(对方)
+#define RX_ADDRESS           0x12345678               //接收有效地址(本方)
+#define TX_ADDRESS           0x12345678               //发送有效地址(对方)
 
 #define CH_NO_FREQ_422_4MHz  0x000                     //工作频率422.4MHz(433MHz频段最低频率)
 #define CH_NO_FREQ_422_5MHz  0x001                     //工作频率422.5MHz
@@ -227,7 +238,7 @@ nrf905配置寄存器宏定义 author:HotPower
 #define CH_NO_BYTE           CH_NO_FREQ & 0xff         //工作频率低8位       Byte0       01101100
 
 #define AUTO_RETRAN          0x20                      //重发数据包          Byte1.5     0
-#define RX_RED_PWR           0x10                      //接收低功耗模式       Byte1.4     0
+#define RX_RED_PWR           0x10                      //接收低功耗模式      Byte1.4     0
 #define PA_PWR__10dBm        0x00                      //输出功率-10dBm      Byte1.3~2   00
 #define PA_PWR_2dBm          0x04                      //输出功率+2dBm       Byte1.3~2
 #define PA_PWR_6dBm          0x08                      //输出功率+6dBm       Byte1.3~2
@@ -256,11 +267,11 @@ nrf905配置寄存器宏定义 author:HotPower
 #define RX_ADDRESS_2         (RX_ADDRESS >> 8) & 0xff  //接收有效地址第3字节 Byte7       11100111
 #define RX_ADDRESS_3         RX_ADDRESS & 0xff         //接收有效地址第4字节 Byte8       11100111
        
-#define CRC_MODE_16BIT       0x80                      //CRC16模式         Byte9.7     1
-#define CRC_MODE_8BIT        0x00                      //CRC8模式          Byte9.7     
-#define CRC_EN               0x40                      //CRC使能           Byte9.6     1
-#define CRC16_EN             0xc0                      //CRC16模式使能      Byte9.7~6   11
-#define CRC8_EN              0x40                      //CRC8模式使能       Byte9.7~6
+#define CRC_MODE_16BIT       0x80                      //CRC16模式           Byte9.7     1
+#define CRC_MODE_8BIT        0x00                      //CRC8模式            Byte9.7     
+#define CRC_EN               0x40                      //CRC使能             Byte9.6     1
+#define CRC16_EN             0xc0                      //CRC16模式使能       Byte9.7~6   11
+#define CRC8_EN              0x40                      //CRC8模式使能        Byte9.7~6
 #define XOF_20MHz            0x20                      //晶体振荡器频率20MHz Byte9.5~3
 #define XOF_16MHz            0x18                      //晶体振荡器频率16MHz Byte9.5~3   100
 #define XOF_12MHz            0x10                      //晶体振荡器频率12MHz Byte9.5~3
@@ -282,12 +293,13 @@ nrf905配置寄存器宏定义 author:HotPower
 #define TX_ADDRESS_2         (TX_ADDRESS >> 8) & 0xff  //发送有效地址第3字节
 #define TX_ADDRESS_3         TX_ADDRESS & 0xff         //发送有效地址第4字节
 
-
+/*$PAGE*/
 
 extern volatile uint8_t TxBuf[32], RxBuf[32];
 
 /**
  * <p> Set nRF905 Operating Mode: Power down and SPI programming </p>
+ *
  * <table border>
  * <tr><th>PWR_UP</th><th>TRX_CE</th><th>TX_EN</th><th>Operating Mode</th></tr>
  * <tr><td>1</td><td>X</td><td>X</td><td>Power down and SPI programming</td></tr>
@@ -296,13 +308,16 @@ extern volatile uint8_t TxBuf[32], RxBuf[32];
  * <tr><td>1</td><td>1</td><td>0</td><td>Radio Enable - ShockBurst RX</td></tr>
  * <tr><td>1</td><td>1</td><td>1</td><td>Radio Enable - ShockBurst TX</td></tr>
  * </table border>
- * @param  void
- * @return void 
+ *
+ * @param  None
+ * @return None 
+ *
  */
 void    SetPowerOffMode(void);
 
 /**
  * <p> Set nRF905 Operating Mode: Standby and SPI Porgramming </p>
+ *
  * <table border>
  * <tr><th>PWR_UP</th><th>TRX_CE</th><th>TX_EN</th><th>Operating Mode</th></tr>
  * <tr><td>1</td><td>X</td><td>X</td><td>Power down and SPI programming</td></tr>
@@ -311,13 +326,16 @@ void    SetPowerOffMode(void);
  * <tr><td>1</td><td>1</td><td>0</td><td>Radio Enable - ShockBurst RX</td></tr>
  * <tr><td>1</td><td>1</td><td>1</td><td>Radio Enable - ShockBurst TX</td></tr>
  * </table border>
- * @param  void
- * @return void 
+ *
+ * @param  None
+ * @return None
+ * 
  */
 void    SetStandbyMode(void);
 
 /**
  * <p> Set nRF905 Operating Mode: Radio Enable - ShockBurst TX </p>
+ *
  * <table border>
  * <tr><th>PWR_UP</th><th>TRX_CE</th><th>TX_EN</th><th>Operating Mode</th></tr>
  * <tr><td>1</td><td>X</td><td>X</td><td>Power down and SPI programming</td></tr>
@@ -326,13 +344,16 @@ void    SetStandbyMode(void);
  * <tr><td>1</td><td>1</td><td>0</td><td>Radio Enable - ShockBurst RX</td></tr>
  * <tr><td>1</td><td>1</td><td>1</td><td>Radio Enable - ShockBurst TX</td></tr>
  * </table border>
- * @param  void
- * @return void
+ *
+ * @param  None
+ * @return None
+ *
  */
 void    SetTxMode(void);
 
 /**
  * <p> Set nRF905 Operating Mode: Radio Enable - ShockBurst RX </p>
+ *
  * <table border>
  * <tr><th>PWR_UP</th><th>TRX_CE</th><th>TX_EN</th><th>Operating Mode</th></tr>
  * <tr><td>1</td><td>X</td><td>X</td><td>Power down and SPI programming</td></tr>
@@ -341,77 +362,97 @@ void    SetTxMode(void);
  * <tr><td>1</td><td>1</td><td>0</td><td>Radio Enable - ShockBurst RX</td></tr>
  * <tr><td>1</td><td>1</td><td>1</td><td>Radio Enable - ShockBurst TX</td></tr>
  * </table border>
- * @param  void
- * @return void
+ *
+ * @param  None
+ * @return None
+ *
  */
 void    SetRxMode(void);
 
 /**
  * <p> Fill Tx Data Packet </p>
+ *
  * ------------+----------------
  * |           |               |
  * |   ADDR    |   PAYLOAD     |
  * |           |               |
  * ------------+----------------
  *
- * @param  void
- * @return void
+ * @param  None
+ * @return None
+ *
  */
 void    TxPacket (void);
 
 /**
  * <p> Read Rx Data when DR and AM is low </p>
- * @param  void
- * @return void
+ *
+ * @param  None
+ * @return True or False
+ *
  */
-void    RxPacket (void);
+uint8_t    RxPacket (void);
 
 /**
  * <p> System Board Init </p>
- * @param  void
- * @return void
+ *
+ * @param  None
+ * @return None
+ *
  */
 void    ConfigGPIO(void);
 
 /**
  * <p> Write nRF905 Register </p>
- * @param  void
- * @return void
+ *
+ * @param  None
+ * @return None
+ *
  */
 void    Config905(void);
 
 /**
  * <p> Init nRF905 </p>
- * @param  void
- * @return void
+ *
+ * @param  None
+ * @return None
+ *
  */
 void    Init905(void);
                                         /* Delay  */
 /**
  * <p> Delay 28 ns </p>
- * @param  uint32_t ns
- * @return void
+ *
+ * @param  ns
+ * @return None
+ *
  */
 void    Delay28ns(uint32_t ns);         /* LPC1752 a Cycle is 28ns */
     
 /**
  * <p> Delay 1 us </p>
- * @param  uint8_t us
- * @return void
+ *
+ * @param  us
+ * @return None
+ *
  */
 void    Delay1us(uint8_t us);           /* 1 us   */
 
 /**
  * <p> Delay 1 ms </p>
- * @param  uint32_t ms
- * @return void
+ *
+ * @param  ms
+ * @return None
+ *
  */
 void    Delay1ms(uint32_t ms);          /* 1ms    */
 
 /**
  * <p> Test SPI </p>
- * @param  uint8_t cmd
- * @return uint8_t status
+ *
+ * @param  cmd
+ * @return status
+ *
  */
 uint8_t    MSpiTest(uint8_t cmd);
 
